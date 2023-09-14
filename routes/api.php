@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\InvestigadorController;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,3 +18,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+Route::post('/orcid/create/{orcid}', [InvestigadorController::class, 'create']);
+Route::delete('/orcid/delete/{orcid}', [InvestigadorController::class, 'delete']);
+Route::get('/orcid/list', [InvestigadorController::class, 'list']);
+Route::get('/orcid/{orcid}', [InvestigadorController::class, 'show']);
