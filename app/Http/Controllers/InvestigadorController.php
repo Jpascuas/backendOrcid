@@ -4,38 +4,66 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use App\Models\Investigador; 
+use App\Models\Investigador;
+use GuzzleHttp\Client;
+use SimpleXMLElement;
 
 class InvestigadorController extends Controller
 {
 
-    public function create(Request $request, $orcid)
+    public function create($orcid)
     {
+        try {
+            // Crear una instancia de Guzzle, debo de estudiar esta libreria
+            $client = new Client();
 
-        // Realizar una solicitud HTTP a la API de ORCID
-        $response = Http::get("https://pub.orcid.org/v3.0/$orcid");
+            // Realizar la peticio a orcid segun documentacion
+            $response = $client->get("https://pub.orcid.org/v3.0/$orcid");
 
-        // Validar que los datos del investigador se obtuvieron correctamente
-        if ($response->successful()) {
-            $data = $response->json();
+            // Verificar si la peticion fue exitosa 
+            if ($response->getStatusCode() == 200) {
+                // Obtener el contenido de la respuesta XML
+                $xmlContent = $response->getBody()->getContents();
 
-            // Crear un nuevo registro de Investigador
-            $investigador = new Investigador;
-            $investigador->orcid = $data['orcid-identifier']['path'];
-            $investigador->nombre = $data['name']['given-names']['value'];
-            $investigador->apellido = $data['name']['family-name']['value'];
+                // Crear un espacio de nombres para los elementos ORCID , esto se saco de internet porque no funcionaba estudiar!!
+                $xml = new SimpleXMLElement($xmlContent);
+                $xml->registerXPathNamespace('pd', 'http://www.orcid.org/ns/personal-details');
+                $xml->registerXPathNamespace('kw', 'http://www.orcid.org/ns/keywords');
+                $xml->registerXPathNamespace('email', 'http://www.orcid.org/ns/email');
 
-            // Procear el array dekeywords 
-            $investigador->procesarPalabrasClave($data);
+                // Utilizar XPath con los nombres registrados
+                $orcidPath = (string)$xml->xpath('//common:path')[0];
+                $givenNames = (string)$xml->xpath('//pd:given-names')[0];
+                $familyName = (string)$xml->xpath('//pd:family-name')[0];
 
-            // Procesar el correo principal similar a kayword
-            $investigador->procesarCorreoPrincipal($data);
+                // Obtener palabras clave 
+                $keywords = [];
+                foreach ($xml->xpath('//keyword:keywords/keyword:keyword/keyword:content') as $keywordElement) {
+                    $keywords[] = (string)$keywordElement;
+                }
 
-            $investigador->save();
+                // Obtener el correo principal evaluando si primary es true
+                $correoPrincipalElement = $xml->xpath('//email:email[@primary="true"]/email:email')[0];
+                $correoPrincipal = (string)$correoPrincipalElement;
 
-            return response()->json(['message' => 'Éxito', 'data' => $data], 200);
-        } else {
-            return response()->json(['message' => 'ORCID no encontrado'], 404);
+                // Crear un nuevo registro de Investigador
+                $investigador = new Investigador;
+                $investigador->orcid = $orcidPath;
+                $investigador->nombre = $givenNames;
+                $investigador->apellido = $familyName;
+                $investigador->palabras_clave = json_encode($keywords);
+                $investigador->correo_principal = $correoPrincipal;
+                $investigador->save();
+
+                // Devolver una respuesta existo
+                return response()->json(['message' => 'Éxito', 'data' => 'Datos guardados correctamente'], 200);
+            } else {
+                // Si la solicitud no fue exitosa devolver un mensaje de error
+                return response()->json(['message' => 'ORCID no encontrado'], 404);
+            }
+        } catch (Exception $e) {
+            // Manejar cualquier excepción que pueda ocurrir durante la solicitud
+            return response()->json(['message' => 'Error al procesar la solicitud'], 500);
         }
     }
 
