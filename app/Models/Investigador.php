@@ -23,30 +23,4 @@ class Investigador extends Model
         'palabras_clave' => 'json', // se almacena como JSON en la base de datos
     ];
 
-    /// procesar las palabras clave d el array keywords
-    public function procesarPalabrasClave($data)
-    {
-        $keywords = [];
-        if (isset($data['keywords'])) {
-            foreach ($data['keywords']['keyword'] as $keyword) {
-                $keywords[] = $keyword['content'];
-            }
-        }
-        $this->palabras_clave = json_encode($keywords);
-    }
-
-    // coger el correo principal del mismo modo que keyword
-    public function procesarCorreoPrincipal($data)
-    {
-        $correo_principal = '';
-        if (isset($data['emails'])) {
-            foreach ($data['emails']['email'] as $email) {
-                if (isset($email['primary']) && $email['primary'] === true) {
-                    $correo_principal = $email['email'];
-                    break;
-                }
-            }
-        }
-        $this->correo_principal = $correo_principal;
-    }
 }

@@ -21,4 +21,4 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::post('/orcid/create/{orcid}', [InvestigadorController::class, 'create']);
 Route::delete('/orcid/delete/{orcid}', [InvestigadorController::class, 'delete']);
 Route::get('/orcid/list', [InvestigadorController::class, 'list']);
-Route::get('/orcid/{orcid}', [InvestigadorController::class, 'show']);
+Route::get('/orcid/{orcid}', [InvestigadorController::class, 'detail']);
