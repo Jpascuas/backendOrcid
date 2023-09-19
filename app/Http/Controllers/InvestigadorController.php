@@ -61,14 +61,13 @@ class InvestigadorController extends Controller
                 $emailElements = $xml->xpath('//email:email[@primary="true"]/email:email');
                 $correoPrincipal = !empty($emailElements) ? (string)$emailElements[0] : '';
     
-                // Crear un nuevo registro de Investigador
-                $investigador = new Investigador;
-                $investigador->orcid = $orcidPath;
-                $investigador->nombre = $givenNames;
-                $investigador->apellido = $familyName;
-                $investigador->palabras_clave = json_encode($keywords);
-                $investigador->correo_principal = $correoPrincipal;
-                $investigador->save();
+                // Verificar si el registro ya existe en la base de datos si no crea un nuevo registro de Investigador
+                $investigador = Investigador::firstOrCreate(['orcid' => $orcidPath], [
+                    'nombre' => $givenNames,
+                    'apellido' => $familyName,
+                    'palabras_clave' => json_encode($keywords),
+                    'correo_principal' => $correoPrincipal,
+                ]);
     
                 // Devolver una respuesta exitosa
                 return response()->json(['message' => 'Éxito', 'data' => 'Datos guardados correctamente'], 200);
